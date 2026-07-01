@@ -7,6 +7,7 @@
 /*
  * Copyright 2022 Joyent, Inc.
  * Copyright 2025 MNX Cloud, Inc.
+ * Copyright 2026 Edgecast Cloud LLC.
  */
 
 @Library('jenkins-joylib@v1.0.8') _
@@ -16,7 +17,6 @@ pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '30'))
         timestamps()
-        parallelsAlwaysFailFast()
     }
     // Don't assign a specific agent for the entire job, in order to better
     // share resources across jobs. Otherwise, we'd tie up an agent here for
@@ -91,6 +91,30 @@ pipeline {
                 '  <li>SmartOS vmware image</li>\n' +
                 '  <li>SmartOS Changelog file</li>\n' +
                 '</ul></p>'
+        )
+        booleanParam(
+            name: 'failFast',
+            defaultValue: true,
+            description: 'This parameter, if set, will cause any stage to ' +
+                'stop the other stages in mid-build.'
+        )
+        booleanParam(
+            name: 'SKIP_DEFAULT',
+            defaultValue: false,
+            description: 'This parameter, if set, will skip the build of the ' +
+                'default stage (which is run in parallel).'
+        )
+        booleanParam(
+            name: 'SKIP_DEBUG',
+            defaultValue: false,
+            description: 'This parameter, if set, will skip the build of the ' +
+                'debug stage (which is run in parallel).'
+        )
+        booleanParam(
+            name: 'SKIP_OTHER_COMPILER',
+            defaultValue: false,
+            description: 'This parameter, if set, will skip the build of the ' +
+                'alternate-compiler (gcc14) stage (which is run in parallel).'
         )
         booleanParam(
             name: 'BUILD_STRAP_CACHE',
@@ -176,6 +200,7 @@ set -o pipefail
                             branch 'master'
                             triggeredBy cause: 'UserIdCause'
                         }
+                        environment name: 'SKIP_DEFAULT', value: 'false'
                         environment name: 'ONLY_BUILD_STRAP_CACHE', value: 'false'
                     }
                 }
@@ -225,6 +250,7 @@ export ENGBLD_BITS_UPLOAD_IMGAPI=true
                         // any stages which may duplicate the arguments they
                         // specified. The same goes for the rest of the pipeline
                         // stages.
+                        environment name: 'SKIP_DEBUG', value: 'false'
                         environment name: 'PLAT_CONFIGURE_ARGS', value: ''
                         environment name: 'ONLY_BUILD_STRAP_CACHE', value: 'false'
                     }
@@ -269,6 +295,7 @@ export PLAT_CONFIGURE_ARGS="-d $PLAT_CONFIGURE_ARGS"
                             branch 'master'
                             triggeredBy cause: 'UserIdCause'
                         }
+                        environment name: 'SKIP_OTHER_COMPILER', value: 'false'
                         environment name: 'PLAT_CONFIGURE_ARGS', value: ''
                         environment name: 'ONLY_BUILD_STRAP_CACHE', value: 'false'
                     }
